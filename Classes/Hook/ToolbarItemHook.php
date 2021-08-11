@@ -143,8 +143,9 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
                 $parameterArray['redirecturl'] = rawurlencode($domain);
             }
         }
-        $ses_id = $GLOBALS['BE_USER']->user['ses_id'];
+        $ses_id = $_COOKIE['be_typo_user'];
         $parameterArray['verification'] = md5($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] . $ses_id . serialize($parameterArray));
+
         $link = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . '?' . \TYPO3\CMS\Core\Utility\GeneralUtility::implodeArrayForUrl('tx_cabagloginas', $parameterArray);
 
         return $link;

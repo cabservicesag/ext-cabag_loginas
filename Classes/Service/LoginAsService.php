@@ -28,11 +28,11 @@ class LoginAsService extends \TYPO3\CMS\Sv\AuthenticationService
     {
         $row = false;
         $cabag_loginas_data = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_cabagloginas');
-
         if (isset($cabag_loginas_data['verification'])) {
             $ses_id = $_COOKIE['be_typo_user'];
             $verificationHash = $cabag_loginas_data['verification'];
             unset($cabag_loginas_data['verification']);
+
             if (md5($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] . $ses_id . serialize($cabag_loginas_data)) === $verificationHash &&
                 $cabag_loginas_data['timeout'] > time()) {
                 if (class_exists(ConnectionPool::class)) {
@@ -54,6 +54,7 @@ class LoginAsService extends \TYPO3\CMS\Sv\AuthenticationService
                         '*', 'fe_users', 'uid = ' . intval($cabag_loginas_data['userid'])
                     );
                 }
+
                 if ($user[0]) {
                     $row = $this->rowdata = $user[0];
                     if (is_object($GLOBALS["TSFE"]->fe_user)) {
@@ -69,7 +70,6 @@ class LoginAsService extends \TYPO3\CMS\Sv\AuthenticationService
     public function authUser(array $user): int
     {
         $OK = 100;
-
         if ($this->rowdata['uid'] == $user['uid']) {
             $OK = 200;
         }
