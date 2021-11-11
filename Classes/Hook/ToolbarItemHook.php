@@ -18,7 +18,7 @@ use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
-class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface {
+class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemHookInterface {
 
     protected $backendReference;
     protected $users = array();
@@ -123,7 +123,7 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
                 $parameterArray['redirecturl'] = rawurlencode($domain);
             }
         }
-        $ses_id = $GLOBALS['BE_USER']->user['ses_id'];
+        $ses_id = $GLOBALS['BE_USER']->id;
         $parameterArray['verification'] = md5($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] . $ses_id . serialize($parameterArray));
         $link = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . '?' . \TYPO3\CMS\Core\Utility\GeneralUtility::implodeArrayForUrl('tx_cabagloginas', $parameterArray);
 
