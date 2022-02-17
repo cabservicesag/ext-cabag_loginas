@@ -1,5 +1,10 @@
 <?php
+
 namespace Cabag\CabagLoginas\Hook;
+
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Recordlist\RecordList\RecordListHookInterface;
+use Cabag\CabagLoginas\Hook\ToolbarItemHook;
 
 /**
  * This file is part of the TYPO3 CMS project.
@@ -13,38 +18,45 @@ namespace Cabag\CabagLoginas\Hook;
  *
  * The TYPO3 project - inspiring people to share!
  */
+class RecordListHook implements RecordListHookInterface
+{
 
-class RecordListHook implements \TYPO3\CMS\Recordlist\RecordList\RecordListHookInterface {
+    /**
+     * @var $loginAsObj ToolbarItemHook
+     */
+    public $loginAsObj = NULL;
 
-	/**
-	 * @var $loginAsObj \Cabag\CabagLoginas\Hook\ToolbarItemHook
-	 */
-	public $loginAsObj = NULL;
+    public function getLoginasObject()
+    {
+        if ($this->loginAsObj === null) {
+            $this->loginAsObj = GeneralUtility::makeInstance(ToolbarItemHook::class);
+        }
+        return $this->loginAsObj;
+    }
 
-	public function __construct() {
-		$this->loginAsObj = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('Cabag\CabagLoginas\Hook\ToolbarItemHook');
-	}
+    public function makeClip($table, $row, $cells, &$parentObject)
+    {
+        return $cells;
+    }
 
-	public function makeClip($table, $row, $cells, &$parentObject) {
-		return $cells;
-	}
+    public function makeControl($table, $row, $cells, &$parentObject)
+    {
+        if ($table === 'fe_users') {
+            $cells['moveRight'] = $this->getLoginAsObject()->getLoginAsIconInTable($row);
+            // moveRight is only used for pages, therefore we use it here
+        }
 
-	public function makeControl($table, $row, $cells, &$parentObject) {
-		if ($table == 'fe_users') {
-			$loginas = $this->loginAsObj->getLoginAsIconInTable($row);
-			// moveRight is only used for pages, therefore we use it here
-			$cells['moveRight'] = $loginas;
-		}
+        return $cells;
+    }
 
-		return $cells;
-	}
+    public function renderListHeader($table, $currentIdList, $headerColumns, &$parentObject)
+    {
+        return $headerColumns;
+    }
 
-	public function renderListHeader($table, $currentIdList, $headerColumns, &$parentObject) {
-		return $headerColumns;
-	}
-
-	public function renderListHeaderActions($table, $currentIdList, $cells, &$parentObject) {
-		return $cells;
-	}
+    public function renderListHeaderActions($table, $currentIdList, $cells, &$parentObject)
+    {
+        return $cells;
+    }
 }
 

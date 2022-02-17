@@ -14,42 +14,33 @@ namespace Cabag\CabagLoginas\Hook;
  *
  * The TYPO3 project - inspiring people to share!
  */
+
+use PDO;
+use TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface;
+use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Backend\Utility\IconUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
+use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
 
-class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
+class ToolbarItemHook implements ToolbarItemInterface
 {
 
     protected $backendReference;
     protected $users = array();
     protected $EXTKEY = 'cabag_loginas';
 
+    protected $initialized = false;
+
     public function __construct(\TYPO3\CMS\Backend\Controller\BackendController &$backendReference = null)
     {
-        $GLOBALS['LANG']->includeLLFile('EXT:cabag_loginas/Resources/Private/Language/locallang_db.xlf');
         $this->backendReference = $backendReference;
-
-        $email = $GLOBALS['BE_USER']->user['email'];
-
-        if (class_exists(ConnectionPool::class)) {
-            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-                ->getQueryBuilderForTable('fe_users');
-            $this->users = $queryBuilder->select('*')
-                ->from('fe_users')
-                ->where($queryBuilder->expr()->eq('email', $queryBuilder->createNamedParameter($email, \PDO::PARAM_STR)))
-                ->setMaxResults(15)
-                ->execute()
-                ->fetchAll();
-        } else {
-            $this->users = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
-                '*', 'fe_users', 'email = ' . $GLOBALS['TYPO3_DB']->fullQuoteStr($email, 'fe_users') . ' AND disable = 0 AND deleted = 0', '', '', '15'
-            );
-        }
     }
+
 
     public function checkAccess()
     {
@@ -60,6 +51,25 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
 
     public function render()
     {
+        $GLOBALS['LANG']->includeLLFile('EXT:cabag_loginas/Resources/Private/Language/locallang_db.xlf');
+
+        $email = $GLOBALS['BE_USER']->user['email'];
+
+        if (class_exists(ConnectionPool::class)) {
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+                ->getQueryBuilderForTable('fe_users');
+            $this->users = $queryBuilder->select('*')
+                ->from('fe_users')
+                ->where($queryBuilder->expr()->eq('email', $queryBuilder->createNamedParameter($email, PDO::PARAM_STR)))
+                ->setMaxResults(15)
+                ->execute()
+                ->fetchAll();
+        } else {
+            $this->users = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+                '*', 'fe_users', 'email = ' . $GLOBALS['TYPO3_DB']->fullQuoteStr($email, 'fe_users') . ' AND disable = 0 AND deleted = 0', '', '', '15'
+            );
+        }
+
         $this->backendReference->addCssFile('cabag_loginas', ExtensionManagementUtility::extRelPath($this->EXTKEY) . 'Resources/Public/Stylesheets/cabag_loginas.css');
         $this->backendReference->addJavascriptFile(ExtensionManagementUtility::extRelPath($this->EXTKEY) . 'Resources/Public/JavaScripts/cabag_loginas.js');
 
@@ -77,10 +87,10 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
                 $title .= ' ' . $this->formatLinkText($this->users[0], $defLinkText);
                 $toolbarMenu[] = $this->getLoginAsIconInTable($this->users[0], $title);
             } else {
-                $toolbarMenu[] = '<a href="#" class="toolbar-item"><img' . \TYPO3\CMS\Backend\Utility\IconUtility::skinImg($this->backPath, 'gfx/su_back.gif', 'width="16" height="16"') . ' title="' . $title . '" alt="' . $title . '" /></a>';
+                $toolbarMenu[] = '<a href="#" class="toolbar-item"><img' . IconUtility::skinImg($this->backPath, 'gfx/su_back.gif', 'width="16" height="16"') . ' title="' . $title . '" alt="' . $title . '" /></a>';
 
                 $toolbarMenu[] = '<ul class="toolbar-item-menu" style="display: none;">';
-                $userIcon = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('apps-pagetree-folder-contains-fe_users', array('style' => 'background-position: 0 10px;'));
+                $userIcon = IconUtility::getSpriteIcon('apps-pagetree-folder-contains-fe_users', array('style' => 'background-position: 0 10px;'));
                 foreach ($this->users as $user) {
                     $linktext = $this->formatLinkText($user, $defLinkText);
                     $link = $this->getHREF($user);
@@ -103,23 +113,14 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
         return $defLinkText;
     }
 
-    public function _getAdditionalAttributes()
-    {
-        if (count($this->users)) {
-            return ' id="tx-cabagloginas-menu"';
-        } else {
-            return '';
-        }
-    }
-
     public function getHREF($user)
     {
         if (!MathUtility::canBeInterpretedAsInteger($user['uid'])) {
             return '#';
         }
         $parameterArray = array();
-        $parameterArray['userid'] = (string) $user['uid'];
-        $parameterArray['timeout'] = (string) $timeout = time() + 3600;
+        $parameterArray['userid'] = (string)$user['uid'];
+        $parameterArray['timeout'] = (string)$timeout = time() + 3600;
         // Check user settings for any redirect page
         if ($user['felogin_redirectPid']) {
             $parameterArray['redirecturl'] = $this->getRedirectUrl($user['felogin_redirectPid']);
@@ -138,15 +139,14 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
             }
             if (is_array($userGroup) && !empty($userGroup['felogin_redirectPid'])) {
                 $parameterArray['redirecturl'] = $this->getRedirectUrl($userGroup['felogin_redirectPid']);
-            } elseif (rtrim(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL'), '/') !== ($domain = $this->getRedirectForCurrentDomain($user['pid']))) {
+            } elseif (rtrim(GeneralUtility::getIndpEnv('TYPO3_SITE_URL'), '/') !== ($domain = $this->getRedirectForCurrentDomain($user['pid']))) {
                 // Any manual redirection defined in sys_domain record
                 $parameterArray['redirecturl'] = rawurlencode($domain);
             }
         }
         $ses_id = $_COOKIE['be_typo_user'];
         $parameterArray['verification'] = md5($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] . $ses_id . serialize($parameterArray));
-
-        $link = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . '?' . \TYPO3\CMS\Core\Utility\GeneralUtility::implodeArrayForUrl('tx_cabagloginas', $parameterArray);
+        $link = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . '?' . GeneralUtility::implodeArrayForUrl('tx_cabagloginas', $parameterArray);
 
         return $link;
     }
@@ -171,10 +171,10 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
         }
         if (version_compare(TYPO3_version, '7.6.0', '>=')) {
             $iconFactory = GeneralUtility::makeInstance('TYPO3\CMS\Core\Imaging\IconFactory');
-            $switchUserIcon = $iconFactory->getIcon('actions-system-backend-user-switch', \TYPO3\CMS\Core\Imaging\Icon::SIZE_SMALL)->render();
+            $switchUserIcon = $iconFactory->getIcon('actions-system-backend-user-switch', Icon::SIZE_SMALL)->render();
             $additionalClass = '  class="btn btn-default"';
         } else {
-            $switchUserIcon = \TYPO3\CMS\Backend\Utility\IconUtility::getSpriteIcon('actions-system-backend-user-emulate', array('style' => 'background-position: 0 10px;'));
+            $switchUserIcon = IconUtility::getSpriteIcon('actions-system-backend-user-emulate', array('style' => 'background-position: 0 10px;'));
         }
         $link = $this->getHREF($user);
         $content = '<a title="' . $title . '" href="' . $link . '" target="_blank"' . $additionalClass . '>' . $switchUserIcon . '</a>';
@@ -191,7 +191,7 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
     public function getRedirectForCurrentDomain($pid)
     {
         $extConf = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['cabag_loginas']);
-        $domain = \TYPO3\CMS\Backend\Utility\BackendUtility::getViewDomain($pid);
+        $domain = BackendUtility::getViewDomain($pid);
         $domainArray = parse_url($domain);
 
         if (empty($extConf['enableDomainBasedRedirect'])) {
@@ -208,7 +208,7 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
                 ->select('domainName', 'tx_cabagfileexplorer_redirect_to')
                 ->from('sys_domain')
                 ->where(
-                    $queryBuilder->expr()->eq('domainName', $queryBuilder->createNamedParameter($domainArray['host'], \PDO::PARAM_STR))
+                    $queryBuilder->expr()->eq('domainName', $queryBuilder->createNamedParameter($domainArray['host'], PDO::PARAM_STR))
                 )
                 ->setMaxResults(1)
                 ->execute()
@@ -223,7 +223,7 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
             return $domain;
         }
 
-        $domain = 'http' . (\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SSL') ? 's' : '') . '://' . $rowArray[0]['domainName'] . '/' .
+        $domain = 'http' . (GeneralUtility::getIndpEnv('TYPO3_SSL') ? 's' : '') . '://' . $rowArray[0]['domainName'] . '/' .
             ltrim($rowArray[0]['tx_cabagfileexplorer_redirect_to'], '/');
 
         return $domain;
@@ -236,7 +236,7 @@ class ToolbarItemHook implements \TYPO3\CMS\Backend\Toolbar\ToolbarItemInterface
      */
     protected function getRedirectUrl($pageId)
     {
-        return rawurlencode(\TYPO3\CMS\Backend\Utility\BackendUtility::getViewDomain($pageId) . '/index.php?id=' . $pageId);
+        return rawurlencode(BackendUtility::getViewDomain($pageId) . '/index.php?id=' . $pageId);
     }
 
     /**
