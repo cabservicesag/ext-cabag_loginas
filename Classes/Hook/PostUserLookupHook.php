@@ -2,6 +2,11 @@
 
 namespace Cabag\CabagLoginas\Hook;
 
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\HttpUtility;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
+use Cabag\CabagLoginas\Hook\ToolbarItemHook;
+
 /**
  * This file is part of the TYPO3 CMS project.
  *
@@ -23,36 +28,38 @@ namespace Cabag\CabagLoginas\Hook;
  * @package TYPO3
  * @subpackage tx_cabagloginas
  */
-class PostUserLookupHook {
+class PostUserLookupHook
+{
 
     /**
      * Looks for any redirection after login.
      *
      * @param array $params
-     * @param \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication $pObj
+     * @param FrontendUserAuthentication $pObj
      *
      * @return void
      */
-    public function postUserLookUp($params, &$pObj) {
+    public function postUserLookUp($params, &$pObj)
+    {
         if (TYPO3_MODE == 'FE') {
             if (!empty($GLOBALS['TSFE']->fe_user->user['uid'])) {
-                $cabagLoginasData = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('Cabag\CabagLoginas\Hook\ToolbarItemHook');
+                $cabagLoginasData = GeneralUtility::_GP(ToolbarItemHook::class);
                 if (!empty($cabagLoginasData['redirecturl'])) {
                     $partsArray = parse_url(rawurldecode($cabagLoginasData['redirecturl']));
-                    if (strpos(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL'), $partsArray['scheme'] . '://' . $partsArray['host'] . '/') === FALSE) {
+                    if (strpos(GeneralUtility::getIndpEnv('TYPO3_SITE_URL'), $partsArray['scheme'] . '://' . $partsArray['host'] . '/') === FALSE) {
                         $partsArray['query'] .= '&FE_SESSION_KEY=' . rawurlencode(
                                 $pObj->id . '-' . md5($pObj->id . '/' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'])
-                        );
+                            );
                     }
-                    $redirectUrl = (isset($partsArray['scheme']) ? $partsArray['scheme'] . '://' : '') .                                           
+                    $redirectUrl = (isset($partsArray['scheme']) ? $partsArray['scheme'] . '://' : '') .
                         (isset($partsArray['user']) ? $partsArray['user'] .
-                        (isset($partsArray['pass']) ? ':' . $partsArray['pass'] : '') . '@' : '') .
+                            (isset($partsArray['pass']) ? ':' . $partsArray['pass'] : '') . '@' : '') .
                         (isset($partsArray['host']) ? $partsArray['host'] : '') .
                         (isset($partsArray['port']) ? ':' . $partsArray['port'] : '') .
                         (isset($partsArray['path']) ? $partsArray['path'] : '') .
                         (isset($partsArray['query']) ? '?' . $partsArray['query'] : '') .
                         (isset($partsArray['fragment']) ? '#' . $partsArray['fragment'] : '');
-                    \TYPO3\CMS\Core\Utility\HttpUtility::redirect($redirectUrl);
+                    HttpUtility::redirect($redirectUrl);
                 }
             }
         }
