@@ -2,7 +2,7 @@
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-if (!defined('TYPO3_MODE')) {
+if (!defined('TYPO3')) {
 	die ('Access denied.');
 }
 
@@ -18,7 +18,7 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['Objects'][TYPO3\CMS\Frontend\Middleware\Fron
 ];
 
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService($_EXTKEY, 'auth', 'Cabag\\CabagLoginas\\Service\\LoginAsService' /* sv key */,
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService('cabag_loginas', 'auth', 'Cabag\\CabagLoginas\\Service\\LoginAsService' /* sv key */,
 	array(
 
 		'title' => 'Login as Service',
