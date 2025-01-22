@@ -124,7 +124,9 @@ class ToolbarItemHook implements ToolbarItemInterface
         $parameterArray['userid'] = (string)$user['uid'];
         $parameterArray['timeout'] = (string)$timeout = time() + 3600;
         // Check user settings for any redirect page
-        if ($user['felogin_redirectPid']) {
+
+        //update 12
+        if (@$user['felogin_redirectPid']) {
             $parameterArray['redirecturl'] = $this->getRedirectUrl($user['felogin_redirectPid']);
         } else {
             $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
@@ -173,7 +175,9 @@ class ToolbarItemHook implements ToolbarItemInterface
         if (trim($title) === '') {
             $title = $GLOBALS['LANG']->getLL('cabag_loginas.switchToFeuser', true);
         }
-        if (version_compare(TYPO3_version, '7.6.0', '>=')) {
+        //update 12
+        $typo3Version=GeneralUtility::makeInstance(\TYPO3\CMS\Core\Information\Typo3Version::class);
+        if (version_compare(strval($typo3Version->getMajorVersion()), '7.6.0', '>=')) {
             $iconFactory = GeneralUtility::makeInstance('TYPO3\CMS\Core\Imaging\IconFactory');
             $switchUserIcon = $iconFactory->getIcon('actions-system-backend-user-switch', Icon::SIZE_SMALL)->render();
             $additionalClass = '  class="btn btn-default"';
