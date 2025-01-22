@@ -29,7 +29,13 @@ class LoginAsService extends AbstractAuthenticationService
     public function getUser()
     {
         $row = false;
-        $cabagLoginasData = GeneralUtility::_GP('tx_cabagloginas');
+        //update 12
+        if ((new \TYPO3\CMS\Core\Information\Typo3Version())->getMajorVersion() < 12) {
+            $cabagLoginasData = GeneralUtility::_GP('tx_cabagloginas');
+        }else{
+            $request = &$GLOBALS['TYPO3_REQUEST'] ?? ServerRequestFactory::fromGlobals();
+            $cabagLoginasData = $request->getParsedBody()['tx_cabagloginas'] ?? $request->getQueryParams()['tx_cabagloginas'] ?? null;
+        }   
 
         if (isset($cabagLoginasData['verification'])) {
             $ses_id = $_COOKIE['be_typo_user'];
