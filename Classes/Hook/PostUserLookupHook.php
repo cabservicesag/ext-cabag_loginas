@@ -2,9 +2,13 @@
 
 namespace Cabag\CabagLoginas\Hook;
 
+//update 12
+use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Core\Http\ApplicationType;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\HttpUtility;
-use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
+use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
+use \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 /**
  * This file is part of the TYPO3 CMS project.
@@ -39,17 +43,25 @@ class PostUserLookupHook {
      */
     public function postUserLookUp(array $params, object &$pObj) {
 
-        if (TYPO3_MODE == 'FE') {
+        if (($GLOBALS['TYPO3_REQUEST'] ?? null) instanceof ServerRequestInterface
+            && ApplicationType::fromRequest($GLOBALS['TYPO3_REQUEST'])->isFrontend()
+        ) {
             if (!empty($GLOBALS['TSFE']->fe_user->user['uid'])) {
-                $cabagLoginasData = GeneralUtility::_GP('Cabag\CabagLoginas\Hook\ToolbarItemHook');
+                if ((new \TYPO3\CMS\Core\Information\Typo3Version())->getMajorVersion() < 12) {
+                    $cabagLoginasData = GeneralUtility::_GP('Cabag\CabagLoginas\Hook\ToolbarItemHook');
+                }else{
+                    $request = &$GLOBALS['TYPO3_REQUEST'] ?? ServerRequestFactory::fromGlobals();
+                    $cabagLoginasData = $request->getParsedBody()['Cabag\CabagLoginas\Hook\ToolbarItemHook'] ?? $request->getQueryParams()['Cabag\CabagLoginas\Hook\ToolbarItemHook'] ?? null;
+                }
+                
                 if (!empty($cabagLoginasData['redirecturl'])) {
                     $partsArray = parse_url(rawurldecode($cabagLoginasData['redirecturl']));
-                    if (strpos(GeneralUtility::getIndpEnv('TYPO3_SITE_URL'), $partsArray['scheme'] . '://' . $partsArray['host'] . '/') === FALSE) {
+                    if (strpos(GeneralUtility::getIndpEnv('TYPO3_SITE_URL'), $partsArray['scheme'] . '://' . $partsArray['host'] . '/') === false) {
                         $partsArray['query'] .= '&FE_SESSION_KEY=' . rawurlencode(
-                                $pObj->id . '-' . md5($pObj->id . '/' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'])
+                            $pObj->id . '-' . md5($pObj->id . '/' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'])
                         );
                     }
-                    $redirectUrl = (isset($partsArray['scheme']) ? $partsArray['scheme'] . '://' : '') .                                           
+                    $redirectUrl = (isset($partsArray['scheme']) ? $partsArray['scheme'] . '://' : '') .
                         (isset($partsArray['user']) ? $partsArray['user'] .
                         (isset($partsArray['pass']) ? ':' . $partsArray['pass'] : '') . '@' : '') .
                         (isset($partsArray['host']) ? $partsArray['host'] : '') .
@@ -57,7 +69,14 @@ class PostUserLookupHook {
                         (isset($partsArray['path']) ? $partsArray['path'] : '') .
                         (isset($partsArray['query']) ? '?' . $partsArray['query'] : '') .
                         (isset($partsArray['fragment']) ? '#' . $partsArray['fragment'] : '');
-                    HttpUtility::redirect($redirectUrl);
+
+                    $responseFactory = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+                            \Psr\Http\Message\ResponseFactoryInterface::class
+                        );
+                        $response = $responseFactory
+                            ->createResponse()
+                            ->withAddedHeader('location', $redirectUrl);    
+                    //HttpUtility::redirect($redirectUrl);
                 }
             }
         }
