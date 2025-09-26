@@ -1,0 +1,14 @@
+# Configuration/Services.yaml
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+  # Place here the default dependency injection configuration
+
+  Cabag\CabagLoginas\Backend\EventListener\loginEventListener:
+    tags:
+      - name: event.listener
+        identifier: 'cabag/recordlist/login-event-listener'
+        method: 'modifyRecordActions'
+        event: TYPO3\CMS\Backend\RecordList\Event\ModifyRecordListRecordActionsEvent
